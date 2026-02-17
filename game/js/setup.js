@@ -2,16 +2,16 @@ Game.Setup = OZ.Class();
 Game.Setup.prototype.init = function() {
 	document.body.innerHTML = "";
 	this._players = [
-		{type:"D", active:true,  name:"Helmut Pohl"},
-		{type:"U", active:true,  name:"Jane Blonda"},
-		{type:"F", active:false, name:"Vera Cruise"},
-		{type:"J", active:false, name:"Mikro Mawasaki"},
-		{type:"E", active:false, name:"James Fond"},
-		{type:"I", active:false, name:"Luigi Maserotti"},
-		{type:"M", active:false, name:"Zora Meander"},
-		{type:"V", active:false, name:"Armino Gesserti"}
+		{type:"D", state:"human", name:"Helmut Pohl"},
+		{type:"U", state:"human", name:"Jane Blonda"},
+		{type:"F", state:"inactive", name:"Vera Cruise"},
+		{type:"J", state:"inactive", name:"Mikro Mawasaki"},
+		{type:"E", state:"inactive", name:"James Fond"},
+		{type:"I", state:"inactive", name:"Luigi Maserotti"},
+		{type:"M", state:"inactive", name:"Zora Meander"},
+		{type:"V", state:"inactive", name:"Armino Gesserti"}
 	];
-	
+
 	this._build();
 	document.body.appendChild(this._node);
 }
@@ -53,10 +53,11 @@ Game.Setup.prototype._build = function() {
 Game.Setup.prototype._click = function(e) {
 	OZ.Event.stop(e);
 	var target = OZ.Event.target(e);
+	var cycle = {"inactive":"ai", "ai":"human", "human":"inactive"};
 	for (var i=0;i<this._players.length;i++) {
 		var player = this._players[i];
 		if (player.node == target) {
-			player.active = !player.active;
+			player.state = cycle[player.state];
 			this._sync(player);
 			return;
 		}
@@ -64,8 +65,15 @@ Game.Setup.prototype._click = function(e) {
 }
 
 Game.Setup.prototype._sync = function(player) {
-	player.node.style.backgroundImage = (player.active ? "url(img/setup/" + player.type + ".png)" : "none");
-	player.name.style.display = (player.active ? "" : "none");
+	if (player.state == "inactive") {
+		player.node.style.backgroundImage = "none";
+		player.node.style.filter = "";
+		player.name.style.display = "none";
+	} else {
+		player.node.style.backgroundImage = "url(img/setup/" + player.type + ".png)";
+		player.node.style.filter = (player.state == "ai" ? "grayscale(100%)" : "");
+		player.name.style.display = "";
+	}
 }
 
 Game.Setup.prototype._done = function(e) {
@@ -73,13 +81,13 @@ Game.Setup.prototype._done = function(e) {
 	var count = 0;
 	for (var i=0;i<this._players.length;i++) {
 		var p = this._players[i];
-		if (p.active && p.name.value) { count++; }
+		if (p.state != "inactive" && p.name.value) { count++; }
 	}
 	if (count == 0) { return; }
 
 	for (var i=0;i<this._players.length;i++) {
 		var p = this._players[i];
-		if (p.active && p.name.value) { Game.createPlayer(p.type, p.name.value); }
+		if (p.state != "inactive" && p.name.value) { Game.createPlayer(p.type, p.name.value, p.state == "ai"); }
 	}
 
 	this._close();

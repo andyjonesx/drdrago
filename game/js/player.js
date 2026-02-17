@@ -2,7 +2,7 @@ Game.Player = OZ.Class().extend(Game.Animation).implement(Game.IInputHandler);
 Game.Player.FLIGHT_OFFSET = -24;
 
 Game.Player.fromJSON = function(data) {
-	var result = new this(data.type, data.name);
+	var result = new this(data.type, data.name, data.ai);
 
 	result._orientation = data.orientation;
 	result._moves = data.moves;
@@ -14,14 +14,15 @@ Game.Player.fromJSON = function(data) {
 	for (var i=0;i<data.cards.length;i++) {
 		result.addCard(Game.cards[data.cards[i]]);
 	}
-	
-	return result;	
+
+	return result;
 }
 
-Game.Player.prototype.init = function(type, name) {
+Game.Player.prototype.init = function(type, name, ai) {
 	this._index = null;
 	this._type = type;
 	this._name = name;
+	this._ai = ai || false;
 	this._flags = {
 		block: false,
 		sleep: false,
@@ -67,10 +68,15 @@ Game.Player.prototype.init = function(type, name) {
 	this._animation.frames = 4;
 }
 
+Game.Player.prototype.isAI = function() {
+	return this._ai;
+}
+
 Game.Player.prototype.toJSON = function() {
 	var obj = {
 		type: this._type,
 		name: this._name,
+		ai: this._ai,
 		orientation: this._orientation,
 		index: this._index,
 		money: this._money,
@@ -286,8 +292,14 @@ Game.Player.prototype.endTurn = function() {
 
 Game.Player.prototype._enableControl = function() {
 	Game.keyboard.push(this);
-	Game.movement.show(this, this._index);	
-	
+	Game.movement.show(this, this._index);
+
+	/* AI takes over */
+	if (this._ai) {
+		this._aiAct();
+		return;
+	}
+
 	/* activate autopilot! */
 	if (this.getFlags().noSteering && (this._moves || this._path.length > 1)) { this._autoPilot(); }
 }
@@ -337,6 +349,63 @@ Game.Player.prototype._autoPilot = function() {
 	}
 	
 	this._moveDirection(availableDirections.random());
+}
+
+Game.Player.prototype._aiAct = function() {
+	var self = this;
+	if (!this._moves && this._path.length <= 1) {
+		/* turn start: go to slot machine */
+		setTimeout(function() {
+			self._disableControl();
+			Game.Slot.roll1().onDone(function(result) { self.moveBy(result); });
+		}, 500);
+	} else if (this._moves > 0) {
+		/* has moves: pick direction toward target */
+		setTimeout(function() { self._aiMove(); }, 300);
+	} else {
+		/* no moves left: end turn */
+		setTimeout(function() {
+			self._disableControl();
+			self._decideTurn();
+		}, 300);
+	}
+}
+
+Game.Player.prototype._aiMove = function() {
+	var node = GRAPH[this._index];
+	var pathDirs = [];
+	var availDirs = [];
+
+	for (var i = 0; i < node.neighbors.length; i++) {
+		var n = node.neighbors[i];
+		if (n === null) { continue; }
+
+		/* avoid going back (same logic as autopilot) */
+		if (node.type == "view") {
+			if (n == this._path[this._path.length - 1]) { continue; }
+		} else if (this._path.length > 1) {
+			var previousIndex = this._path[this._path.length - 2];
+			if (n == previousIndex) { continue; }
+			var targetNode = GRAPH[n];
+			if (targetNode.neighbors[i] == previousIndex) { continue; }
+		}
+
+		availDirs.push(i);
+		if (node.path && node.path[i]) { pathDirs.push(i); }
+	}
+
+	var dirs = pathDirs.length ? pathDirs : availDirs;
+
+	if (!dirs.length) {
+		/* dead end: go back */
+		for (var i = 0; i < node.neighbors.length; i++) {
+			if (node.neighbors[i] !== null) { dirs.push(i); break; }
+		}
+	}
+
+	if (dirs.length) {
+		this._moveDirection(dirs.random());
+	}
 }
 
 Game.Player.prototype._moveDirection = function(direction) {

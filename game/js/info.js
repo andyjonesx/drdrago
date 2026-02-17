@@ -194,6 +194,12 @@ Game.Info.prototype.init = function(picture, text) {
 
 	Game.keyboard.push(this);
 	this._ec.push(OZ.Touch.onActivate(this._node, this._activate.bind(this)));
+
+	/* AI auto-dismiss */
+	if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+		var self = this;
+		setTimeout(function() { self.handleInput(Game.INPUT_ENTER); }, 1000);
+	}
 }
 
 Game.Info.prototype.handleInput = function(type, param) {

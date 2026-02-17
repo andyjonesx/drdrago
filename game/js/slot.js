@@ -140,6 +140,12 @@ Game.Slot.prototype.init = function(conf) {
 	
 	Game.keyboard.push(this);
 	this._eventActivate = OZ.Touch.onActivate(layer, this._activate.bind(this));
+
+	/* AI auto-start */
+	if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+		var self = this;
+		setTimeout(function() { self.handleInput(Game.INPUT_ENTER); }, 500);
+	}
 }
 
 Game.Slot.prototype.tick = function(dt) {
@@ -234,6 +240,11 @@ Game.Slot.prototype._stop = function() {
 			Game.engine.removeActor(this._animations.pop(), Game.LAYER_WIN);
 		}
 		this._phase = 2;
+
+		/* AI auto-finish */
+		if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+			setTimeout(this._finish.bind(this), 500);
+		}
 	}
 }
 

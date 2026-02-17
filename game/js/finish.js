@@ -177,6 +177,12 @@ Game.Finish.prototype.init = function(player) {
 	this._oldQueue = OZ.Audio.background.queue;
 	OZ.Audio.background.queue = ["Z1"];
 	OZ.Audio.background.next();
+
+	/* AI auto-dismiss */
+	if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+		var self = this;
+		setTimeout(function() { self.handleInput(Game.INPUT_ENTER); }, 2000);
+	}
 }
 
 Game.Finish.prototype.tick = function(dt) {

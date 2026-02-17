@@ -12,6 +12,12 @@ Game.BuySell.prototype.init = function() {
 	document.body.appendChild(this._node);
 	this._ec.push(OZ.Touch.onActivate(this._header, this._activate.bind(this)));
 	Game.keyboard.push(this);
+
+	/* AI auto-close */
+	if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+		var self = this;
+		setTimeout(function() { self.handleInput(Game.INPUT_ESC); }, 500);
+	}
 }
 
 Game.BuySell.prototype.handleInput = function(type, param) {

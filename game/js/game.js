@@ -45,6 +45,7 @@ var Game = {
 	cards: [],
 	tiles: null,
 	month: 0,
+	currentPlayer: null,
 
 	_remain: 0
 };
@@ -121,8 +122,8 @@ Game.play = function(load) {
 	this.engine.start();
 }
 
-Game.createPlayer = function(type, name) {
-	var player = new Game.Player(type, name);
+Game.createPlayer = function(type, name, ai) {
+	var player = new Game.Player(type, name, ai);
 	this.players.push(player);
 	player.setIndex(399);
 	player.addCard(this.cards.random());

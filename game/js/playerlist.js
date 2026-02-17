@@ -33,6 +33,16 @@ Game.PlayerList.prototype.init = function(exclude) {
 	
 	this._select(0);
 	Game.keyboard.push(this);
+
+	/* AI auto-pick random player */
+	if (Game.currentPlayer && Game.currentPlayer.isAI()) {
+		var self = this;
+		setTimeout(function() {
+			var index = Math.floor(Math.random() * self._players.length);
+			self._select(index);
+			self.handleInput(Game.INPUT_ENTER);
+		}, 500);
+	}
 }
 
 Game.PlayerList.prototype.handleInput = function(type, param) {
