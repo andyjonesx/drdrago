@@ -373,7 +373,9 @@ Game.Player.prototype._aiAct = function() {
 
 Game.Player.prototype._aiMove = function() {
 	var node = GRAPH[this._index];
+	var safePathDirs = [];
 	var pathDirs = [];
+	var safeDirs = [];
 	var availDirs = [];
 
 	for (var i = 0; i < node.neighbors.length; i++) {
@@ -390,11 +392,27 @@ Game.Player.prototype._aiMove = function() {
 			if (targetNode.neighbors[i] == previousIndex) { continue; }
 		}
 
+		/* check destination type, looking through views */
+		var destType = GRAPH[n].type;
+		if (destType == "view") {
+			var beyond = GRAPH[n].neighbors[i];
+			if (beyond !== null) { destType = GRAPH[beyond].type; }
+		}
+
+		var safe = (destType != "red");
+		var onPath = (node.path && node.path[i]);
+
 		availDirs.push(i);
-		if (node.path && node.path[i]) { pathDirs.push(i); }
+		if (onPath) { pathDirs.push(i); }
+		if (safe) { safeDirs.push(i); }
+		if (onPath && safe) { safePathDirs.push(i); }
 	}
 
-	var dirs = pathDirs.length ? pathDirs : availDirs;
+	/* priority: safe path > safe detour > any path > any direction */
+	var dirs = safePathDirs.length ? safePathDirs
+		: safeDirs.length ? safeDirs
+		: pathDirs.length ? pathDirs
+		: availDirs;
 
 	if (!dirs.length) {
 		/* dead end: go back */
